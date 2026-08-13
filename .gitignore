@@ -1,2 +1,6 @@
 *.exe
 .vscode/
+*.db
+*.o
+V3CRMBD
+*.txt
