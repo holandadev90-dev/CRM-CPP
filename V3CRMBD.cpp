@@ -9,7 +9,6 @@ using namespace std;
 
 // ==== PROTOTIPOS === //
 ////////////////////////
-void deletarClientePornome();
 void menuDeletarCliente();
 
 // Ponteiro global para gerenciar a conexão com o banco de dados
@@ -93,10 +92,11 @@ void cadastrarcliente()
 
     cout << "=====--= CADASTRAR CLIENTE =--=====\n";
     cout << "Digite o nome do cliente:\n";
-    cin.ignore();
-    getline(cin, nome);
+    getline(cin, nome); // <-- Limpo e direto! Sem o cin.ignore() antes.
+
     cout << "Digite um email para cadastro:\n";
     getline(cin, email);
+
     cout << "Digite um telefone para cadastro:\n";
     getline(cin, telefone);
     cout << "======================================\n";
@@ -109,14 +109,17 @@ void cadastrarcliente()
 
     if (resultado == SQLITE_OK)
     {
-        cout << "\nCliente cadastrado e salvo no SQLite com sucesso!\n";
+        cout << "\n[SUCESSO] Cliente cadastrado e salvo no SQLite com sucesso!\n";
     }
     else
     {
-        cout << "\nErro ao salvar no banco: " << erroMsg << endl;
+        cout << "\n[ERRO] Falha ao salvar no banco: " << erroMsg << endl;
+        sqlite3_free(erroMsg); // Boa prática: limpa a memória da mensagem de erro se houver
     }
-}
 
+    cout << "\nPressione ENTER para voltar ao menu...";
+    cin.get(); // Aguarda o usuário ler a mensagem antes de voltar ao menu
+}
 // --- BANCO DE DADOS: LISTAR CLIENTES (SELECT) ---
 void listagem()
 {
