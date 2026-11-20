@@ -1,0 +1,16 @@
+@echo off
+echo Limpando arquivos antigos...
+del /Q *.o 2>nul
+del /Q crm_app.exe 2>nul
+
+echo Compilando SQLite...
+C:\mingw64\bin\gcc.exe -c sqlite3.c -o sqlite3.o
+
+echo Compilando ImGui...
+C:\mingw64\bin\g++.exe -c ImGUI/imgui.cpp ImGUI/imgui_draw.cpp ImGUI/imgui_tables.cpp ImGUI/imgui_widgets.cpp ImGUI/backends/imgui_impl_glfw.cpp ImGUI/backends/imgui_impl_opengl3.cpp -IImGUI -Iinclude
+
+echo Compilando o projeto (main, telas, banco, cliente, modulos)...
+C:\mingw64\bin\g++.exe main.cpp telas.cpp banco.cpp cliente.cpp modulos.cpp crm_clientes.cpp crm_produtos.cpp sqlite3.o imgui.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui_impl_glfw.o imgui_impl_opengl3.o -o crm_app.exe -Iinclude -IImGUI -Llib-mingw-w64 -lglfw3 -lgdi32 -lopengl32 -lcomdlg32 -lshell32
+
+echo Compilacao concluida! Executando...
+crm_app.exe

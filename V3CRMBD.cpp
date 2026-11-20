@@ -3,6 +3,7 @@
 #include <vector>
 #include <ctime>
 #include <iomanip>
+#include <sstream>
 #include "sqlite3.h" // Importa o motor do SQLite local
 
 using namespace std;
@@ -13,8 +14,6 @@ void menuDeletarCliente();
 
 // Ponteiro global para gerenciar a conexão com o banco de dados
 sqlite3 *db = nullptr;
-
-int excluiropc;
 
 class Cliente
 {
@@ -92,7 +91,7 @@ void cadastrarcliente()
 
     cout << "=====--= CADASTRAR CLIENTE =--=====\n";
     cout << "Digite o nome do cliente:\n";
-    getline(cin, nome); // <-- Limpo e direto! Sem o cin.ignore() antes.
+    getline(cin, nome);
 
     cout << "Digite um email para cadastro:\n";
     getline(cin, email);
@@ -101,7 +100,6 @@ void cadastrarcliente()
     getline(cin, telefone);
     cout << "======================================\n";
 
-    // Prepara o comando SQL de inserção
     string sql = "INSERT INTO clientes (nome, email, telefone) VALUES ('" + nome + "', '" + email + "', '" + telefone + "');";
 
     char *erroMsg = nullptr;
@@ -114,12 +112,13 @@ void cadastrarcliente()
     else
     {
         cout << "\n[ERRO] Falha ao salvar no banco: " << erroMsg << endl;
-        sqlite3_free(erroMsg); // Boa prática: limpa a memória da mensagem de erro se houver
+        sqlite3_free(erroMsg);
     }
 
     cout << "\nPressione ENTER para voltar ao menu...";
-    cin.get(); // Aguarda o usuário ler a mensagem antes de voltar ao menu
+    cin.get();
 }
+
 // --- BANCO DE DADOS: LISTAR CLIENTES (SELECT) ---
 void listagem()
 {
@@ -129,12 +128,10 @@ void listagem()
     cout << "Acesso a aba de listagem de clientes\n";
     cout << "=======================================\n";
 
-    // Prepara a consulta SQL
     if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL) == SQLITE_OK)
     {
         int quantidade = 0;
 
-        // Percorre cada linha que o SQL retornou
         while (sqlite3_step(stmt) == SQLITE_ROW)
         {
             int id = sqlite3_column_int(stmt, 0);
@@ -150,13 +147,16 @@ void listagem()
         sqlite3_finalize(stmt);
         cout << "Total de clientes cadastrados no banco: " << quantidade << endl;
     }
+
+    cout << "\nPressione ENTER para voltar ao menu...";
+    cin.get(); // Pausa para você conseguir ler a listagem
 }
 
 void vendasconfirmadas()
 {
     cout << "=====--= VENDAS CONFIRMADAS =--=====\n";
     cout << "======================================\n\n";
-    cout << "ID\tNOME\tEMAIL\tTELEFONE\n";
+    cout << "ID\tNOME\t\tEMAIL\t\tTELEFONE\n";
 
     string sql = "SELECT * FROM clientes;";
     sqlite3_stmt *stmt;
@@ -173,33 +173,11 @@ void vendasconfirmadas()
         sqlite3_finalize(stmt);
     }
     cout << "===---===-- FIM DA LISTA DE CLIENTES ===---===--\n";
+
+    cout << "\nPressione ENTER para voltar ao menu...";
+    cin.get(); // Pausa para você conseguir ver a tabela
 }
 
-void deletarClientePorNome(string nome)
-{
-    string sql = "DELETE FROM clientes WHERE nome LIKE '%" + nome + "%';";
-
-    char *erroMsg = nullptr;
-    int resultado = sqlite3_exec(db, sql.c_str(), NULL, 0, &erroMsg);
-
-    if (resultado == SQLITE_OK)
-    {
-        int apagados = sqlite3_changes(db);
-        if (apagados > 0)
-        {
-            cout << "\n[SUCESSO] " << apagados << " cliente(s) deletado(s) com sucesso!\n";
-        }
-        else
-        {
-            cout << "\n[AVISO] Nenhum cliente encontrado com esse nome.\n";
-        }
-    }
-    else
-    {
-        cout << "\n[ERRO] Falha ao deletar: " << erroMsg << "\n";
-        sqlite3_free(erroMsg);
-    }
-}
 void menuDeletarCliente()
 {
     cout << "\n===-- EXCLUIR CLIENTE --===\n";
@@ -217,16 +195,12 @@ void menuDeletarCliente()
 
     int idParaDeletar = -1;
 
-    // ==========================================
-    // OPÇÃO 1: DELETAR POR ID (COM CONFIRMAÇÃO)
-    // ==========================================
     if (excluiropc == 1)
     {
         cout << "Digite o ID do cliente: ";
         cin >> idParaDeletar;
         cin.ignore();
 
-        // Busca os dados do cliente pelo ID no banco antes de apagar
         string sqlBusca = "SELECT id, nome, email FROM clientes WHERE id = " + to_string(idParaDeletar) + ";";
         sqlite3_stmt *stmt;
 
@@ -253,9 +227,6 @@ void menuDeletarCliente()
             sqlite3_finalize(stmt);
         }
     }
-    // ==========================================
-    // OPÇÃO 2: BUSCAR POR NOME
-    // ==========================================
     else if (excluiropc == 2)
     {
         string nomeBusca;
@@ -303,9 +274,6 @@ void menuDeletarCliente()
         }
     }
 
-    // ==========================================
-    // ETAPA FINAL: CONFIRMAÇÃO E EXCLUSÃO
-    // ==========================================
     if (idParaDeletar > 0)
     {
         char confirma;
@@ -354,7 +322,7 @@ void menu()
         cout << "==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n";
 
         cin >> opcao;
-        cin.ignore(); // Limpa o buffer para nao dar bugs nas proximas leituras de texto!
+        cin.ignore(); // Limpa o buffer de entrada
 
         if (opcao == 1)
             cadastrarcliente();
@@ -363,18 +331,22 @@ void menu()
         else if (opcao == 3)
             vendasconfirmadas();
         else if (opcao == 4)
-            menuDeletarCliente(); // Chama o menu de deletar e DEPOIS volta pro menu principal
+            menuDeletarCliente();
         else if (opcao == 5)
             cout << "Saindo do CRM...\n";
         else
-            cout << "Opcao invalida! Tente novamente.\n";
+        {
+            cout << "Opcao invalida tente novamente...\n";
+            cout << "Pressione ENTER para continuar...";
+            cin.get();
+        }
     }
 }
 
 int main()
 {
-    inicializarBanco(); // Conecta e cria o banco crm.db
+    inicializarBanco();
     menu();
-    sqlite3_close(db); // Fecha a conexão com o banco ao fechar o programa
+    sqlite3_close(db);
     return 0;
 }
